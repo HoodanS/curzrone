@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تيمي</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;overflow:hidden}
+body{--a:#7aa2ff;--b:#2f5bff;--c:#1b2f8f;--ring:#5b8cff;
+  background:radial-gradient(circle at 50% 40%,#16203d 0%,#0b1020 70%);
+  color:#e8edff;font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
+  transition:background .4s}
+body[data-state="listening"]{--a:#6ff0b0;--b:#16c47f;--c:#0a7a52;--ring:#2de39a}
+body[data-state="thinking"]{--a:#c9a6ff;--b:#8b5cf6;--c:#4c2a9a;--ring:#a78bfa}
+body[data-state="speaking"]{--a:#7fe3ff;--b:#1fa8ff;--c:#0b5fa8;--ring:#4cc9ff}
+
+#orb{position:relative;width:min(44vmin,400px);flex:none;aspect-ratio:1;border-radius:50%;border:0;padding:0;cursor:pointer;
+  background:radial-gradient(circle at 35% 30%,var(--a),var(--b) 55%,var(--c));
+  box-shadow:0 0 60px -10px var(--ring),inset 0 -20px 50px rgba(0,0,0,.25);
+  display:grid;place-items:center;color:#fff;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;outline:none;
+  animation:breathe 4s ease-in-out infinite;transition:box-shadow .4s}
+@keyframes breathe{50%{transform:scale(1.035)}}
+#orb::before,#orb::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--ring);opacity:0;pointer-events:none}
+body[data-state="listening"] #orb{animation:none}
+body[data-state="listening"] #orb::before{animation:ring 1.8s ease-out infinite}
+body[data-state="listening"] #orb::after{animation:ring 1.8s ease-out .9s infinite}
+@keyframes ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.45);opacity:0}}
+
+.ico{grid-area:1/1;width:34%;height:34%;display:none}
+.ico svg{width:100%;height:100%;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body[data-state="idle"] .mic,body[data-state="listening"] .mic,body[data-state="standby"] .mic{display:block}
+body[data-state="standby"] .mic{opacity:.65}
+body[data-state="standby"] #orb{opacity:.9}
+body[data-state="listening"] .mic{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.15)}}
+
+.spin{width:28%;height:28%;border:.55rem solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%}
+body[data-state="thinking"] .spin{display:block;animation:rot .9s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+.bars{align-items:center;justify-content:center;gap:5%;width:40%;height:30%}
+body[data-state="speaking"] .bars{display:flex}
+.bars i{display:block;width:9%;height:100%;border-radius:999px;background:#fff;animation:bar .9s ease-in-out infinite}
+.bars i:nth-child(2){animation-delay:.15s}.bars i:nth-child(3){animation-delay:.3s}
+.bars i:nth-child(4){animation-delay:.45s}.bars i:nth-child(5){animation-delay:.6s}
+@keyframes bar{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+
+#st{min-height:1.8rem;font-size:1.3rem;color:#aab6dd;text-align:center;padding:0 1rem}
+#cap{width:min(92vw,900px);max-height:30vh;overflow-y:auto;text-align:center;display:flex;flex-direction:column;gap:.5rem;padding:0 .5rem}
+#heard{font-size:1.1rem;color:#9fb0e0}
+#said{font-size:1.55rem;line-height:1.5;color:#fff}
+#act{font-size:1rem;color:#6ff0b0}
+#heard:empty,#said:empty,#act:empty{display:none}
+#bar{position:fixed;bottom:calc(1rem + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;gap:.7rem}
+#bar button{background:rgba(255,255,255,.1);color:#e8edff;border:0;border-radius:999px;padding:.55rem 1.4rem;font:inherit;font-size:1.05rem;cursor:pointer}
+#hp{position:fixed;inset:0;z-index:20;background:rgba(11,16,32,.97);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+#hp[hidden]{display:none}
+#hp-top{display:flex;align-items:center;gap:.8rem;padding:.9rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.1)}
+#hp-title{flex:1;font-size:1.3rem;text-align:center}
+#hp button{background:rgba(255,255,255,.12);color:#e8edff;border:0;border-radius:999px;padding:.5rem 1.2rem;font:inherit;font-size:1rem;cursor:pointer}
+#hp button.danger{background:rgba(255,90,90,.25)}
+#hp-body{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column}
+#hp-foot{display:flex;gap:.8rem;justify-content:center;padding:.8rem 1.2rem calc(.8rem + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.1)}
+.it{background:rgba(255,255,255,.07);border-radius:14px;padding:.8rem 1rem;margin-bottom:.6rem;cursor:pointer}
+.it b{display:block;font-size:1.1rem;font-weight:600;margin-bottom:.2rem}
+.it small{color:#9fb0e0}
+.m{max-width:80%;padding:.6rem .9rem;border-radius:14px;margin:.35rem 0;white-space:pre-wrap;line-height:1.5;font-size:1.1rem}
+.m.u{background:rgba(122,162,255,.2);align-self:flex-start}
+.m.a{background:rgba(255,255,255,.1);align-self:flex-end}
+.m small{display:block;color:#6ff0b0;margin-top:.2rem}
+.none{margin:auto;color:#9fb0e0;font-size:1.2rem}
+</style>
+</head>
+<body data-state="idle">
+<button id="orb" aria-label="talk">
+  <span class="ico mic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+  <span class="ico spin"></span>
+  <span class="ico bars"><i></i><i></i><i></i><i></i><i></i></span>
+</button>
+<div id="st" dir="auto"></div>
+<div id="cap"><div id="heard" dir="auto"></div><div id="said" dir="auto"></div><div id="act" dir="auto"></div></div>
+<div id="bar"><button id="hs"></button><button id="lg"></button></div>
+<div id="hp" hidden>
+  <div id="hp-top"><button id="hp-back"></button><div id="hp-title"></div><button id="hp-x"></button></div>
+  <div id="hp-body"></div>
+  <div id="hp-foot"></div>
+</div>
+<script>
+// wake:true = always listening for the name "Temi"/"تيمي" (no tap needed); after an answer it keeps listening for followMs, then goes back to standby.
+// wake:false = old behaviour (tap the circle for every turn; continuous decides whether it keeps listening after each answer).
+var CONFIG = { endpoint: "/chat", tts: "/tts", continuous: false, wake: true, followMs: 8000 };
+
+var T = {
+  ar: { tap: "اضغط على الدائرة وتكلم", standby: "قل «تيمي» وتكلم، أو اضغط على الدائرة", listen: "أسمعك…", think: "لحظة…", hi: "هلا! كيف أقدر أساعدك؟",
+        err: "تعذّر الاتصال، حاول مرة ثانية", nomic: "هذا المتصفح ما يسمح بالميكروفون (يحتاج رابط https)", denied: "اسمح للمتصفح باستخدام الميكروفون", lg: "English",
+        hs: "السجل", hTitle: "المحادثات السابقة", none: "ما في محادثات محفوظة بعد", back: "رجوع", close: "إغلاق", resume: "متابعة هذه المحادثة",
+        del: "حذف", delSure: "اضغط مرة ثانية للتأكيد", clear: "مسح الكل", msgs: "رسائل", resumed: "تم استرجاع المحادثة، كمّل كلامك", you: "أنت",
+        act: { open: "فتح", settings: "فتح الإعدادات", goto: "الذهاب إلى", follow: "أتبعك", stop: "إيقاف", home: "العودة للقاعدة", turn: "الدوران", tilt: "تحريك الرأس" } },
+  en: { tap: "Tap the circle and talk", standby: "Say “Temi” and talk, or tap the circle", listen: "Listening…", think: "One moment…", hi: "Hi! How can I help you?",
+        err: "Couldn’t connect, please try again", nomic: "This browser can’t access the microphone (needs https)", denied: "Please allow microphone access", lg: "عربي",
+        hs: "History", hTitle: "Past conversations", none: "No saved conversations yet", back: "Back", close: "Close", resume: "Continue this conversation",
+        del: "Delete", delSure: "Tap again to confirm", clear: "Clear all", msgs: "messages", resumed: "Conversation restored, go ahead", you: "You",
+        act: { open: "Opening", settings: "Opening settings", goto: "Going to", follow: "Following you", stop: "Stopping", home: "Going home", turn: "Turning", tilt: "Tilting head" } }
+};
+var lang = "ar", active = false, state = "idle", hist = [], greeted = false, speakTimer = null;
+var stream = null, ac = null, cap = null, curSrc = null, hiCache = {}, noiseFloor = 0.01;
+var session = null, lastTurn = 0, robotCache = null, robotAt = 0;
+var $ = function (id) { return document.getElementById(id); };
+var st = $("st"), DEBUG = location.search.indexOf("debug") >= 0, dbg = null;
+if (DEBUG) { dbg = document.createElement("div"); dbg.style.cssText = "position:fixed;top:6px;left:0;right:0;text-align:center;font:14px monospace;color:#9fb;direction:ltr;z-index:9"; dbg.textContent = "v6 debug"; document.body.appendChild(dbg); }
+
+function setState(s, msg) { $("orb").style.transform = ""; state = s; document.body.setAttribute("data-state", s); st.textContent = msg || ""; }
+function fail(msg) {
+  active = false; cap = null; setState("idle", msg);
+  if (CONFIG.wake && stream) setTimeout(function () { if (!active && state === "idle") startStandby(); }, 3500);
+}
+function newCap() { return { chunks: [], speech: false, lastVoice: 0, tSpeech: 0, t0: Date.now(), noise: noiseFloor, voiceMs: 0 }; }
+function startStandby() { // always-listening mode: waits for the name "Temi" / "تيمي"
+  if (!CONFIG.wake || !stream || !ac || ac.state !== "running") { setState("idle", T[lang].tap); return; }
+  active = false; setState("standby", T[lang].standby); cap = newCap();
+}
+function endTalk() { active = false; cap = null; if (CONFIG.wake) startStandby(); else setState("idle", T[lang].tap); }
+function afterTurn() { if (!active) return; if (CONFIG.wake || CONFIG.continuous) listen(); else stopAll(); }
+
+function pickVoice(l) {
+  var vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  for (var i = 0; i < vs.length; i++) if (vs[i].lang.toLowerCase().indexOf(l) === 0) return vs[i];
+  return null;
+}
+// Replaceable: step 2 swaps this for a more human-sounding voice.
+function speak(text, done) {
+  var finished = false;
+  function fin() { if (finished) return; finished = true; clearTimeout(speakTimer); if (done) done(); }
+  if (!window.speechSynthesis) { fin(); return; }
+  try {
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    var l = /[\u0600-\u06FF]/.test(text) ? "ar" : "en";
+    u.lang = l === "ar" ? "ar-SA" : "en-US";
+    var v = pickVoice(l); if (v) u.voice = v;
+    u.rate = 0.95; u.onend = fin; u.onerror = fin;
+    speechSynthesis.speak(u);
+    speakTimer = setTimeout(fin, text.length * 100 + 4000);
+  } catch (e) { fin(); }
+}
+function stopAll() {
+  active = false; cap = null; clearTimeout(speakTimer);
+  try { if (curSrc) { curSrc.onended = null; curSrc.stop(); curSrc = null; } } catch (e) {}
+  try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+  if (CONFIG.wake) startStandby(); else setState("idle", T[lang].tap);
+}
+
+/* ---- Gemini voice: the server sends raw PCM (24 kHz, 16-bit, mono); we play it with Web Audio ---- */
+function playPcm(b64s, done) {
+  var fin = false; function end() { if (fin) return; fin = true; curSrc = null; if (done) done(); }
+  try {
+    var bin = atob(b64s), n = bin.length >> 1, f = new Float32Array(n), i, v;
+    for (i = 0; i < n; i++) { v = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8); if (v > 32767) v -= 65536; f[i] = v / 32768; }
+    var buf = ac.createBuffer(1, n, 24000); buf.getChannelData(0).set(f);
+    var s = ac.createBufferSource(); s.buffer = buf; s.connect(ac.destination); s.onended = end; curSrc = s; s.start();
+  } catch (e) { end(); }
+}
+function speakOut(text, audio, done) {
+  if (DEBUG && dbg) dbg.textContent = "v6 voice=" + (audio && ac ? "gemini" : "BROWSER (Gemini voice failed)");
+  if (audio && ac) playPcm(audio, done); else speak(text, done);
+} // falls back to the browser voice
+async function greet() {
+  setState("speaking", "");
+  if (!hiCache[lang]) {
+    try {
+      var r = await fetch(CONFIG.tts, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: T[lang].hi }) });
+      var j = await r.json(); if (r.ok && j.audio) hiCache[lang] = j.audio;
+    } catch (e) {}
+  }
+  if (active) speakOut(T[lang].hi, hiCache[lang], function () { if (active) listen(); });
+}
+
+/* ---- Microphone capture with simple voice-activity detection (works without browser speech recognition) ---- */
+async function getMic(quiet) {
+  if (stream) return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { if (!quiet) fail(T[lang].nomic); return false; }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { if (!quiet) fail(T[lang].denied + " (" + (e.name || "error") + ")"); return false; }
+  var AC = window.AudioContext || window.webkitAudioContext;
+  ac = new AC();
+  var src = ac.createMediaStreamSource(stream);
+  var proc = ac.createScriptProcessor(4096, 1, 1);
+  proc.onaudioprocess = onAudio;
+  src.connect(proc); proc.connect(ac.destination); // output stays silent (we never write to it)
+  return true;
+}
+function listen() {
+  if (!active) return;
+  setState("listening", T[lang].listen);
+  cap = newCap();
+}
+function onAudio(e) {
+  if (!cap || (state !== "listening" && state !== "standby")) return;
+  var sb = state === "standby";
+  var d = e.inputBuffer.getChannelData(0), n = d.length, sum = 0, i;
+  for (i = 0; i < n; i++) sum += d[i] * d[i];
+  var rms = Math.sqrt(sum / n), now = Date.now();
+  var thr = Math.max(0.012, cap.noise * 3);
+  if (!sb) $("orb").style.transform = "scale(" + (1 + Math.min(rms * 6, 0.12)) + ")"; // orb swells with your voice
+  if (DEBUG) dbg.textContent = "v6 " + state + " sr=" + ac.sampleRate + " rms=" + rms.toFixed(4) + " thr=" + thr.toFixed(4) + (cap.speech ? " SPEECH" : "");
+  if (rms > thr) { if (!cap.speech) cap.tSpeech = now; cap.speech = true; cap.lastVoice = now; cap.voiceMs += n / ac.sampleRate * 1000; }
+  else if (!cap.speech) { cap.noise = cap.noise * 0.95 + rms * 0.05; noiseFloor = Math.min(cap.noise, 0.05); }
+  cap.chunks.push(new Float32Array(d));
+  if (!cap.speech && cap.chunks.length > 5) cap.chunks.shift(); // keep a short pre-roll before speech starts
+  if (cap.speech && (now - cap.lastVoice > 1200 || now - cap.tSpeech > (sb ? 10000 : 20000))) {
+    var c = cap, tooLong = sb && now - c.tSpeech > 10000; cap = null;
+    if (sb) { if (c.voiceMs < 350 || tooLong) cap = newCap(); else sendWake(c.chunks); } // standby: ignore blips and constant noise
+    else if (c.voiceMs < 250) listen(); else send(c.chunks);
+  } else if (!sb && !cap.speech && now - cap.t0 > CONFIG.followMs) { // nobody spoke
+    if (CONFIG.wake) endTalk(); else if (CONFIG.continuous) listen(); else stopAll();
+  }
+}
+function toWav(chunks, rate) {
+  var len = 0, o = 0, i, k; chunks.forEach(function (c) { len += c.length; });
+  var all = new Float32Array(len); chunks.forEach(function (c) { all.set(c, o); o += c.length; });
+  var ratio = rate / 16000, outLen = Math.floor(len / ratio), pcm = new Int16Array(outLen);
+  for (i = 0; i < outLen; i++) {
+    var a = Math.floor(i * ratio), z = Math.max(a + 1, Math.floor((i + 1) * ratio)), s = 0;
+    for (k = a; k < z; k++) s += all[k];
+    s = Math.max(-1, Math.min(1, s / (z - a)));
+    pcm[i] = s < 0 ? s * 32768 : s * 32767;
+  }
+  var buf = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(buf);
+  function w(off, str) { for (var j = 0; j < str.length; j++) v.setUint8(off + j, str.charCodeAt(j)); }
+  w(0, "RIFF"); v.setUint32(4, 36 + pcm.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 16000, true); v.setUint32(28, 32000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, "data"); v.setUint32(40, pcm.length * 2, true);
+  for (i = 0; i < pcm.length; i++) v.setInt16(44 + i * 2, pcm[i], true);
+  return buf;
+}
+function b64(buf) {
+  var b = new Uint8Array(buf), s = "";
+  for (var i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+/* ---- What the robot can do: the page tells the server which places and apps exist; the server sends back one validated action ---- */
+function robotInfo() {
+  var b = window.TemiBridge;
+  if (!b) return null; // plain browser: no robot actions
+  if (robotCache && Date.now() - robotAt < 30000) return robotCache;
+  var o = { locations: [], apps: [] };
+  try { o.locations = JSON.parse(b.locations()); } catch (e) {}
+  try { o.apps = JSON.parse(b.apps()); } catch (e) {}
+  robotCache = o; robotAt = Date.now();
+  return o;
+}
+function runAction(a) { try { if (window.TemiBridge && a && a.name) window.TemiBridge.exec(JSON.stringify(a)); } catch (e) {} }
+function actLabel(a) {
+  if (!a) return "";
+  var t = T[lang].act;
+  if (a.name === "open_app") return t.open + " " + ((a.args && a.args.label) || "");
+  if (a.name === "goto") return t.goto + " " + ((a.args && a.args.location) || "");
+  return t[a.name] || "";
+}
+
+/* ---- On-screen text ---- */
+function showCap(heard, said, act) {
+  $("heard").textContent = heard ? "\u201C" + heard + "\u201D" : "";
+  $("said").textContent = said || "";
+  $("act").textContent = act || "";
+}
+
+/* ---- History: every conversation is saved on the robot (localStorage) ---- */
+var STORE = "temi_history_v1";
+function loadAll() { try { var a = JSON.parse(localStorage.getItem(STORE) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function saveAll(a) { try { localStorage.setItem(STORE, JSON.stringify(a.slice(-100))); } catch (e) {} }
+function record(user, bot, act) {
+  var now = Date.now(), i, idx = -1;
+  if (session && now - lastTurn > 300000) { session = null; hist = []; } // 5 quiet minutes = a new conversation
+  if (!session) session = { id: now, t: now, title: user.slice(0, 60), msgs: [] };
+  lastTurn = now;
+  session.msgs.push({ role: "user", content: user, t: now }, { role: "assistant", content: bot, t: now, act: act || "" });
+  if (session.msgs.length > 200) session.msgs = session.msgs.slice(-200);
+  hist.push({ role: "user", content: user.slice(0, 1900) }, { role: "assistant", content: bot.slice(0, 1900) });
+  var all = loadAll();
+  for (i = 0; i < all.length; i++) if (all[i].id === session.id) idx = i;
+  if (idx < 0) all.push(session); else all[idx] = session;
+  saveAll(all);
+}
+function onReply(j) {
+  var act = actLabel(j.action);
+  showCap(j.heard, j.reply, act);
+  record(j.heard || "\u2026", j.reply, act);
+  if (j.action) runAction(j.action); // runs right away, before the voice finishes
+  setState("speaking", "");
+  speakOut(j.reply, j.audio, afterTurn);
+}
+
+async function send(chunks) {
+  setState("thinking", T[lang].think);
+  try {
+    var audio = b64(toWav(chunks, ac.sampleRate));
+    var r = await fetch(CONFIG.endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio: audio, tts: true, messages: hist.slice(-10), robot: robotInfo() }) });
+    var j = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(j.detail || j.error || ("HTTP " + r.status));
+    if (!active) return;
+    if (!j.reply) { if (CONFIG.wake || CONFIG.continuous) listen(); else stopAll(); return; } // nothing intelligible
+    onReply(j);
+  } catch (e) { fail(T[lang].err + " (" + e.message + ")"); }
+}
+// Standby: the server only answers if the speech was addressed to "Temi"; anything else comes back empty and is ignored silently.
+async function sendWake(chunks) {
+  try {
+    var audio = b64(toWav(chunks, ac.sampleRate));
+    var r = await fetch(CONFIG.endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio: audio, tts: true, wake: true, messages: hist.slice(-10), robot: robotInfo() }) });
+    var j = await r.json().catch(function () { return {}; });
+    if (active || state !== "standby") return; // you tapped the circle in the meantime
+    if (!r.ok || !j.wake) { cap = newCap(); return; }
+    active = true;
+    if (!j.reply) { listen(); return; }
+    onReply(j);
+  } catch (e) { if (!active && state === "standby") cap = newCap(); }
+}
+
+/* ---- History screen ---- */
+function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+function fmt(t) { try { return new Date(t).toLocaleString(lang === "ar" ? "ar" : "en"); } catch (e) { return String(new Date(t)); } }
+function lastT(s) { return s.msgs && s.msgs.length ? s.msgs[s.msgs.length - 1].t : s.t; }
+function armed(btn, label, sure, fn) {
+  btn.textContent = label; var on = false;
+  btn.onclick = function () { if (!on) { on = true; btn.textContent = sure; setTimeout(function () { on = false; btn.textContent = label; }, 3000); } else fn(); };
+}
+function histList() {
+  var t = T[lang], body = $("hp-body"), foot = $("hp-foot"), all = loadAll().filter(function (s) { return s.msgs && s.msgs.length; });
+  all.sort(function (a, b) { return lastT(b) - lastT(a); });
+  $("hp-title").textContent = t.hTitle; $("hp-back").style.visibility = "hidden"; $("hp-x").textContent = t.close;
+  body.textContent = ""; foot.textContent = "";
+  if (!all.length) { body.appendChild(el("div", "none", t.none)); return; }
+  all.forEach(function (s) {
+    var it = el("div", "it"); it.appendChild(el("b", "", s.title || "\u2026"));
+    it.appendChild(el("small", "", fmt(lastT(s)) + "  \u2022  " + s.msgs.length + " " + t.msgs));
+    it.firstChild.setAttribute("dir", "auto");
+    it.onclick = function () { histItem(s); };
+    body.appendChild(it);
+  });
+  var clr = el("button", "danger"); armed(clr, t.clear, t.delSure, function () { saveAll([]); histList(); }); foot.appendChild(clr);
+}
+function histItem(s) {
+  var t = T[lang], body = $("hp-body"), foot = $("hp-foot");
+  $("hp-title").textContent = fmt(s.t); $("hp-back").style.visibility = "visible"; $("hp-back").textContent = t.back; $("hp-back").onclick = histList;
+  body.textContent = ""; foot.textContent = "";
+  s.msgs.forEach(function (m) {
+    var b = el("div", "m " + (m.role === "user" ? "u" : "a"), m.content); b.setAttribute("dir", "auto");
+    if (m.act) b.appendChild(el("small", "", m.act));
+    body.appendChild(b);
+  });
+  var rs = el("button", "", t.resume); rs.onclick = function () { resumeSession(s); };
+  var dl = el("button", "danger");
+  armed(dl, t.del, t.delSure, function () { saveAll(loadAll().filter(function (x) { return x.id !== s.id; })); histList(); });
+  foot.appendChild(rs); foot.appendChild(dl);
+  body.scrollTop = body.scrollHeight;
+}
+function resumeSession(s) {
+  session = s; lastTurn = Date.now();
+  hist = s.msgs.slice(-10).map(function (m) { return { role: m.role, content: String(m.content || "\u2026").slice(0, 1900) }; });
+  while (hist.length && hist[0].role !== "user") hist.shift();
+  if (hist.length % 2) hist.pop();
+  var n = s.msgs.length, u = s.msgs[n - 2], a = s.msgs[n - 1];
+  showCap(u ? u.content : "", a ? a.content : "", a ? a.act : "");
+  $("hp").hidden = true;
+  st.textContent = T[lang].resumed;
+}
+$("hs").onclick = function () { histList(); $("hp").hidden = false; };
+$("hp-x").onclick = function () { $("hp").hidden = true; };
+
+$("orb").onclick = async function () {
+  if (active) { stopAll(); return; }
+  active = true; cap = null; setState("thinking", "");
+  if (!(await getMic())) return;
+  if (ac.state === "suspended") { try { await ac.resume(); } catch (e) {} }
+  if (!greeted) { greeted = true; greet(); }
+  else listen();
+};
+function applyLang() {
+  var t = T[lang];
+  $("lg").textContent = t.lg; $("hs").textContent = t.hs; document.documentElement.lang = lang;
+  if (state === "idle") st.textContent = t.tap; else if (state === "listening") st.textContent = t.listen; else if (state === "standby") st.textContent = t.standby;
+  if (!$("hp").hidden) histList();
+}
+$("lg").onclick = function () { lang = lang === "ar" ? "en" : "ar"; applyLang(); };
+if (window.speechSynthesis) speechSynthesis.getVoices();
+applyLang();
+
+// Start listening for "Temi" by itself. If the microphone isn't allowed yet (first launch), retry a few times.
+async function autoStart(tries) {
+  if (!CONFIG.wake || stream) return;
+  var ok = await getMic(true);
+  if (ok) { if (ac.state === "suspended") { try { await ac.resume(); } catch (e) {} } startStandby(); }
+  else if (tries < 8) setTimeout(function () { if (!stream && !active) autoStart(tries + 1); }, 3000);
+}
+autoStart(0);
+// Coming back from another app (or the screen waking up): resume listening.
+document.addEventListener("visibilitychange", function () {
+  if (document.hidden) return;
+  try { if (ac && ac.state === "suspended") ac.resume(); } catch (e) {}
+  setTimeout(function () { if (CONFIG.wake && stream && !active && state === "idle") startStandby(); }, 600);
+});
+</script>
+</body>
+</html>
